@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.name }}
+  title: Portfolio de ${{ values.fullName }}
+  description: ${{ values.description }}
+  tags: [nextjs, docker, portfolio]
+  annotations:
+    github.com/project-slug: ${{ values.destination.owner }}/${{ values.destination.repo }}
+  links:
+    - url: http://localhost:3000
+      title: Application (local)
+      icon: web
+    - url: https://hub.docker.com/r/${{ values.dockerhubUser }}/${{ values.name }}
+      title: Image Docker Hub
+      icon: dashboard
+    - url: https://github.com/${{ values.destination.owner }}/${{ values.destination.repo }}/actions
+      title: Pipeline CI/CD
+      icon: dashboard
+spec:
+  type: website
+  lifecycle: production
+  owner: ${{ values.owner }}

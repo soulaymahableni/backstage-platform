@@ -1,0 +1,46 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: portfolio-release-pipeline
+  title: Livrer une nouvelle version du Portfolio (Build → Push → Deploy)
+  description: Déclenche depuis Backstage le pipeline complet - récupération du code, build, image Docker versionnée, push Docker Hub, déploiement local et health check.
+  tags: [cicd, release, docker]
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Version à livrer
+      required: [repoUrl, version]
+      properties:
+        repoUrl:
+          title: Dépôt du Portfolio
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+        version:
+          title: Version de l'image
+          type: string
+          default: v2
+          pattern: '^v[0-9]+(\.[0-9]+)*$'
+          ui:help: ex. v1, v2, v1.1
+
+  steps:
+    - id: dispatch
+      name: Déclenchement du pipeline CI/CD
+      action: github:actions:dispatch
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        workflowId: ci-cd.yml
+        branchOrTagName: main
+        workflowInputs:
+          version: ${{ parameters.version }}
+
+  output:
+    links:
+      - title: Suivre le pipeline (GitHub Actions)
+        url: https://github.com/${{ parameters.repoUrl | parseRepoUrl | pick('owner') }}/${{ parameters.repoUrl | parseRepoUrl | pick('repo') }}/actions
+      - title: Application déployée
+        url: http://localhost:3000

@@ -1,0 +1,108 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: portfolio-nextjs-template
+  title: Portfolio Next.js (Docker + CI/CD + Déploiement local)
+  description: Génère un Portfolio Next.js, crée le dépôt GitHub, les artefacts Docker, le pipeline CI/CD et enregistre le composant dans le catalogue.
+  tags: [nextjs, docker, portfolio, cicd]
+spec:
+  owner: user:guest
+  type: website
+
+  parameters:
+    - title: Informations du Portfolio
+      required: [name, fullName, jobTitle]
+      properties:
+        name:
+          title: Nom du composant
+          type: string
+          default: portfolio-nextjs
+          pattern: '^[a-z0-9-]+$'
+          ui:help: Minuscules, chiffres et tirets uniquement (sert aussi de nom d'image Docker)
+        fullName:
+          title: Nom complet
+          type: string
+        jobTitle:
+          title: Titre / Poste
+          type: string
+          default: Ingénieur DevOps
+        email:
+          title: Email
+          type: string
+        description:
+          title: Description
+          type: string
+          default: Mon portfolio personnel
+        owner:
+          title: Propriétaire
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group, User]
+
+    - title: Docker Hub
+      required: [dockerhubUser, dockerhubToken]
+      properties:
+        dockerhubUser:
+          title: Utilisateur Docker Hub
+          type: string
+        dockerhubToken:
+          title: Access Token Docker Hub
+          type: string
+          ui:field: Secret
+          ui:help: Docker Hub > Account settings > Personal access tokens (Read & Write)
+
+    - title: Dépôt Git
+      required: [repoUrl]
+      properties:
+        repoUrl:
+          title: Emplacement du dépôt
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: fetch
+      name: Génération du projet Next.js
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          fullName: ${{ parameters.fullName }}
+          jobTitle: ${{ parameters.jobTitle }}
+          email: ${{ parameters.email }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          dockerhubUser: ${{ parameters.dockerhubUser }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+
+    - id: publish
+      name: Création du dépôt GitHub
+      action: publish:github
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        description: ${{ parameters.description }}
+        defaultBranch: main
+        repoVisibility: public
+        secrets:
+          DOCKERHUB_USERNAME: ${{ parameters.dockerhubUser }}
+          DOCKERHUB_TOKEN: ${{ secrets.dockerhubToken }}
+
+    - id: register
+      name: Enregistrement dans le Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Dépôt GitHub
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Ouvrir dans le catalogue
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}

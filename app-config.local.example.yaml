@@ -1,0 +1,29 @@
+app:
+  baseUrl: http://192.168.190.141:3002
+  listen:
+    host: 0.0.0.0
+    port: 3002
+
+backend:
+  baseUrl: http://192.168.190.141:7008
+  listen:
+    host: 0.0.0.0
+    port: 7008
+  cors:
+    origin: http://192.168.190.141:3002
+
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+
+catalog:
+  locations:
+    - type: file
+      target: ../../templates/portfolio-nextjs-template/template.yaml
+      rules:
+        - allow: [Template]
+    - type: file
+      target: ../../templates/portfolio-release-template/template.yaml
+      rules:
+        - allow: [Template]
